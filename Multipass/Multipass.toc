@@ -1,7 +1,7 @@
 ## Interface: 30300
 ## Title: Multipass
 ## Notes: Quickly scans a player's raid achievements.
-## Version: 1x01
+## Version: 1x02
 ## Author: Patcriss
 
 Multipass.lua
