@@ -1,85 +1,53 @@
-naxx10_id = 576
-uld10_id = 2894
-toc10_id = 3917
-icc10_id = 4532
-
-naxx25_id = 577
-uld25_id = 2895
-toc25_id = 3916
-icc25_id = 4608
-
-naxx10 = false
-uld10 = false
-toc10 = false
-icc10 = false
-naxx25 = false
-uld25 = false
-toc25 = false
-icc25 = false
-
-text10 = {"", ""}
-text25 = {"", ""}
-
-function resetTooltip()
-	text10 = {"", ""}
-	text25 = {"", ""}
-	GameTooltip:Show()
-end
+local naxx10_id = 576
+local uld10_id = 2894
+local toc10_id = 3917
+local icc10_id = 4532
+local rs10_id = 4817
+local naxx25_id = 577
+local uld25_id = 2895
+local toc25_id = 3916
+local icc25_id = 4608
+local rs25_id = 4815
+local multipass__requesting = false
 
 function onMouseOver()
-	resetTooltip()
-	if(UnitIsPlayer("mouseover")) then
-		Target = UnitName("mouseover")
+	TooltipName = GameTooltip:GetUnit()
+	if ( CanInspect("mouseover") ) and ( UnitName("mouseover") == TooltipName ) and not ( TargetIsInCombat ) then
 
-		if(LastTarget == Target) then
-			-- only display info from memory
+		if (LastTarget == TooltipName) then
 			render()
-		else
+		elseif (not multipass__requesting) then
 			setPlayer()
 		end
+
 	end
 end 
 
 -- Set mouseover player as comparison unit
 function setPlayer()
-	resetTooltip()
-	resetPlayer()
-	local success = SetAchievementComparisonUnit("mouseover")
-end
-
-function resetPlayer()
-	LastTarget = Target
-	ClearAchievementComparisonUnit()
+	LastTarget = TooltipName 
+	resetAchievements()
+	multipass__requesting = SetAchievementComparisonUnit("mouseover")
 end
 
 -- Event handler
 function Multipass_OnEvent(Nil, EventName)
 	-- Handles combatmode on target
-	if ( EventName == "PLAYER_REGEN_ENABLED" ) then TargetIsInCombat = false; return; end
-	if ( EventName == "PLAYER_REGEN_DISABLED" ) then TargetIsInCombat = true; return; end
+	if ( EventName == "PLAYER_REGEN_DISABLED" ) then
+		TargetIsInCombat = true
+		return
+	end
+	
+	if ( EventName == "PLAYER_REGEN_ENABLED" ) then
+		TargetIsInCombat = false
+	end
 
 	-- Achi info is available, read from it
 	if ( EventName == "INSPECT_ACHIEVEMENT_READY" ) then
-		readAchievements()
+		multipass__requesting = false
+		setAchievements()
+		render()
 	end
-end
-
-function readAchievements()
-	resetTooltip()
-	resetAchievements()
-	setAchievements()
-	render()
-end
-
-function resetAchievements()
-	naxx10 = false
-	uld10 = false
-	toc10 = false
-	icc10 = false
-	naxx25 = false
-	uld25 = false
-	toc25 = false
-	icc25 = false
 end
 
 function setAchievements()
@@ -87,65 +55,108 @@ function setAchievements()
 	uld10 = GetAchievementComparisonInfo(uld10_id)
 	toc10 = GetAchievementComparisonInfo(toc10_id)
 	icc10 = GetAchievementComparisonInfo(icc10_id)
+	rs10 = GetAchievementComparisonInfo(rs10_id)
 	naxx25 = GetAchievementComparisonInfo(naxx25_id)
 	uld25 = GetAchievementComparisonInfo(uld25_id)
 	toc25 = GetAchievementComparisonInfo(toc25_id)
 	icc25 = GetAchievementComparisonInfo(icc25_id)
+	rs25 = GetAchievementComparisonInfo(rs25_id)
+	ClearAchievementComparisonUnit()
+end
+
+function getColor(achi)
+	if (achi == "RS+") then
+		-- red
+		return  1,0,0
+	end
+	
+	if (achi == "RS") then
+		-- orange
+		return 1,0.5,0
+	end
+	
+	if (achi == "ICC") then
+		-- purple
+		return 0.7,0.2,1
+	end
+	
+	if (achi == "TOC") then
+		-- blue
+		return 0.3,0.3,1
+	end
+	
+	if (achi == "ULD") then
+		-- green
+		return 0,1,0
+	end
+
+	return 1,1,1
 end
 
 -- Display info on tooltip
 function render()
-	if ( CanInspect("mouseover") ) and (LastTarget == Target) and not ( TargetIsInCombat ) then
 
-		addText(text10, naxx10, "Naxx")
-		addText(text10, uld10, "Uld")
-		addText(text10, toc10, "TOC")
-		addText(text10, icc10, "ICC")
+	if (multipass__requesting) then return; end
 
-		addText(text25, naxx25, "Naxx")
-		addText(text25, uld25, "Uld")
-		addText(text25, toc25, "TOC")
-		addText(text25, icc25, "ICC")
-
-		if(text10[1] == "") then text10[1] = "-" end
-		if(text10[2] == "") then text10[2] = "-" end
-		if(text25[1] == "") then text25[1] = "-" end
-		if(text25[2] == "") then text25[2] = "-" end
-		
-		GameTooltip:AddLine("10-man:", 1,1,1)
-		GameTooltip:AddDoubleLine(text10[1], text10[2], 0,1,0, 1,0,0)
-		GameTooltip:AddLine("25-man:", 1,1,1)
-		GameTooltip:AddDoubleLine(text25[1], text25[2], 0,1,0, 1,0,0)
-		GameTooltip:Show()
-	end
-end
-
-function addText(line, achi, string)
-	if(achi) then
-		if(line[1] == "") then 
-			line[1] = line[1]..string
-		else
-			line[1] = line[1].." "..string
-		end 
+	if (rs10) then
+		achi10 = "RS+"
+	elseif (icc10) then
+		achi10 = "RS"
+	elseif (toc10) then
+		achi10 = "ICC"
+	elseif (uld10) then
+		achi10 = "TOC"
+	elseif (naxx10) then
+		achi10 = "ULD"
 	else
-		if(line[2] == "") then 
-			line[2] = line[2]..string
-		else
-			line[2] = line[2].." "..string
-		end 
+		achi10 = false
 	end
+
+	if (rs25) then
+		achi25 = "RS+"
+	elseif (icc25) then
+		achi25 = "RS"
+	elseif (toc25) then
+		achi25 = "ICC"
+	elseif (uld25) then
+		achi25 = "TOC"
+	elseif (naxx25) then
+		achi25 = "ULD"
+	else
+		achi25 = false
+	end
+
+	r1,g1,b1 = getColor(achi10)
+	r2,g2,b2 = getColor(achi25)
+
+	GameTooltip:AddDoubleLine(achi10 and achi10.."10" or " ", achi25 and achi25.."25" or " ", r1,g1,b1, r2,g2,b2)
+	GameTooltip:Show()
 end
 
+function resetText()
+	achi10 = ""
+	achi25 = ""
+end
 
+function resetAchievements()
+	naxx10 = false
+	uld10 = false
+	toc10 = false
+	icc10 = false
+	rs10 = false
+	naxx25 = false
+	uld25 = false
+	toc25 = false
+	icc25 = false
+	rs25 = false
+end
 
------------------------- GUI PROGRAMS -------------------------------------------------------
-resetTooltip()
+resetText()
 resetAchievements()
+------------------------ GUI PROGRAMS -------------------------------------------------------
 local f = CreateFrame("Frame", "Multipass", UIParent)
 f:SetScript("OnEvent", Multipass_OnEvent);
 f:RegisterEvent("PLAYER_REGEN_ENABLED")
 f:RegisterEvent("PLAYER_REGEN_DISABLED")
 f:RegisterEvent("INSPECT_ACHIEVEMENT_READY")
 GameTooltip:HookScript("OnTooltipSetUnit", onMouseOver)
-
--- print(GetAchievementInfo(576))
